@@ -1,0 +1,307 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
+
+struct Song {
+    char name[50];
+    char artist[50];
+    int duration;
+    struct Song *next;
+};
+
+struct Song *head = NULL;
+
+struct Song* createSong(char *name, char *artist, int duration) {
+    struct Song *newSong = (struct Song*)malloc(sizeof(struct Song));
+    if (newSong == NULL) {
+        printf("Memory allocation failed!\n");
+        exit(1);
+    }
+    strcpy(newSong->name, name);
+    strcpy(newSong->artist, artist);
+    newSong->duration = duration;
+    newSong->next = NULL;
+    return newSong;
+}
+
+void addSongManual(char *name, char *artist, int duration) {
+    struct Song *newSong = createSong(name, artist, duration);
+
+    if (head == NULL)
+        head = newSong;
+    else {
+        struct Song *temp = head;
+        while (temp->next)
+            temp = temp->next;
+        temp->next = newSong;
+    }
+}
+
+void addSong() {
+    char name[50], artist[50];
+    int duration;
+
+    printf("Enter Song Name: ");
+    scanf(" %[^\n]", name);
+    printf("Enter Artist Name: ");
+    scanf(" %[^\n]", artist);
+    printf("Enter Duration (in seconds): ");
+    scanf("%d", &duration);
+
+    addSongManual(name, artist, duration);
+    printf("Song added successfully!\n");
+}
+
+void displaySongs() {
+    if (head == NULL) {
+        printf("No songs available!\n");
+        return;
+    }
+
+    printf("\n--- SONG LIST ---\n");
+    struct Song *temp = head;
+    int count = 1;
+    while (temp != NULL) {
+        printf("%d. %s by %s (%d sec)\n", count++, temp->name, temp->artist, temp->duration);
+        temp = temp->next;
+    }
+}
+
+void deleteSong() {
+    if (head == NULL) {
+        printf("No songs to delete!\n");
+        return;
+    }
+
+    char songName[50];
+    printf("Enter the song name to delete: ");
+    scanf(" %[^\n]", songName);
+
+    struct Song *temp = head, *prev = NULL;
+
+    while (temp != NULL && strcasecmp(temp->name, songName) != 0) {
+        prev = temp;
+        temp = temp->next;
+    }
+
+    if (temp == NULL) {
+        printf("Song not found!\n");
+        return;
+    }
+
+    if (prev == NULL)
+        head = temp->next;
+    else
+        prev->next = temp->next;
+
+    free(temp);
+    printf("Song deleted successfully!\n");
+}
+
+void searchSong() {
+    if (head == NULL) {
+        printf("No songs available!\n");
+        return;
+    }
+
+    char songName[50];
+    printf("Enter song name to search: ");
+    scanf(" %[^\n]", songName);
+
+    struct Song *temp = head;
+    while (temp != NULL) {
+        if (strcasecmp(temp->name, songName) == 0) {
+            printf("Found: %s by %s (%d sec)\n", temp->name, temp->artist, temp->duration);
+            return;
+        }
+        temp = temp->next;
+    }
+
+    printf("Song not found!\n");
+}
+
+void sortSongs() {
+    if (head == NULL || head->next == NULL) {
+        printf("Not enough songs to sort!\n");
+        return;
+    }
+
+    int choice;
+    printf("Sort by:\n1. Song Name\n2. Artist Name\nEnter choice: ");
+    scanf("%d", &choice);
+
+    struct Song *i, *j;
+    for (i = head; i != NULL; i = i->next) {
+        for (j = i->next; j != NULL; j = j->next) {
+            int cmp = (choice == 1)
+                        ? strcasecmp(i->name, j->name)
+                        : strcasecmp(i->artist, j->artist);
+            if (cmp > 0) {
+                char tempName[50], tempArtist[50];
+                int tempDuration;
+
+                strcpy(tempName, i->name);
+                strcpy(i->name, j->name);
+                strcpy(j->name, tempName);
+
+                strcpy(tempArtist, i->artist);
+                strcpy(i->artist, j->artist);
+                strcpy(j->artist, tempArtist);
+
+                tempDuration = i->duration;
+                i->duration = j->duration;
+                j->duration = tempDuration;
+            }
+        }
+    }
+
+    printf("Songs sorted successfully!\n");
+}
+
+void shuffleSongs() {
+    if (head == NULL) {
+        printf("No songs to shuffle!\n");
+        return;
+    }
+
+    struct Song *arr[200];
+    int count = 0;
+    struct Song *temp = head;
+
+    while (temp != NULL && count < 200) {
+        arr[count++] = temp;
+        temp = temp->next;
+    }
+
+    srand(time(NULL));
+    for (int i = 0; i < count; i++) {
+        int j = rand() % count;
+        struct Song *t = arr[i];
+        arr[i] = arr[j];
+        arr[j] = t;
+    }
+
+    printf("\n--- SHUFFLED PLAYLIST ---\n");
+    for (int i = 0; i < count; i++) {
+        printf("%s by %s (%d sec)\n", arr[i]->name, arr[i]->artist, arr[i]->duration);
+    }
+}
+
+void repeatSong() {
+    if (head == NULL) {
+        printf("No songs available!\n");
+        return;
+    }
+
+    char songName[50];
+    printf("Enter song name to repeat: ");
+    scanf(" %[^\n]", songName);
+
+    struct Song *temp = head;
+    while (temp != NULL) {
+        if (strcasecmp(temp->name, songName) == 0) {
+            printf("Repeating: %s by %s\n", temp->name, temp->artist);
+            sleep(1);
+            printf("Repeating again: %s by %s\n", temp->name, temp->artist);
+            return;
+        }
+        temp = temp->next;
+    }
+
+    printf("Song not found!\n");
+}
+
+// Simplified: only show one line per song (no duration, no emojis)
+void playAllSongs() {
+    if (head == NULL) {
+        printf("No songs to play!\n");
+        return;
+    }
+
+    printf("\n--- PLAYING ALL SONGS ---\n");
+    struct Song *temp = head;
+    while (temp != NULL) {
+        printf("Now playing: %s by %s\n", temp->name, temp->artist);
+        sleep(1);
+        temp = temp->next;
+    }
+    printf("\nFinished playing all songs!\n");
+}
+
+// Simplified: only show one line for the selected song (no duration, no emojis)
+void playSpecificSong() {
+    if (head == NULL) {
+        printf("No songs available!\n");
+        return;
+    }
+
+    char songName[50];
+    printf("Enter song name to play: ");
+    scanf(" %[^\n]", songName);
+
+    struct Song *temp = head;
+    while (temp != NULL) {
+        if (strcasecmp(temp->name, songName) == 0) {
+            printf("Now playing: %s by %s\n", temp->name, temp->artist);
+            sleep(1);
+            printf("Finished playing %s\n", temp->name);
+            return;
+        }
+        temp = temp->next;
+    }
+    printf("Song not found!\n");
+}
+
+void preloadSongs() {
+    addSongManual("Shape of You", "Ed Sheeran", 240);
+    addSongManual("Blinding Lights", "The Weeknd", 200);
+    addSongManual("Levitating", "Dua Lipa", 210);
+    addSongManual("Perfect", "Ed Sheeran", 230);
+    addSongManual("Senorita", "Shawn Mendes & Camila Cabello", 190);
+    addSongManual("Stay", "The Kid LAROI & Justin Bieber", 180);
+    addSongManual("Peaches", "Justin Bieber", 175);
+    addSongManual("Calm Down", "Rema & Selena Gomez", 195);
+    addSongManual("Industry Baby", "Lil Nas X", 200);
+    addSongManual("Despacito", "Luis Fonsi ft. Daddy Yankee", 250);
+}
+
+int main() {
+    int choice;
+    preloadSongs();
+
+    while (1) {
+        printf("\n\n===== MUSIC PLAYER SYSTEM (Linked List) =====\n");
+        printf("1. Display All Songs\n");
+        printf("2. Play Specific Song\n");
+        printf("3. Add Song\n");
+        printf("4. Delete Song\n");
+        printf("5. Search Song\n");
+        printf("6. Sort Songs\n");
+        printf("7. Shuffle Songs\n");
+        printf("8. Repeat Song\n");
+        printf("9. Play All Songs\n");
+        printf("10. Exit\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1: displaySongs(); break;
+            case 2: playSpecificSong(); break;
+            case 3: addSong(); break;
+            case 4: deleteSong(); break;
+            case 5: searchSong(); break;
+            case 6: sortSongs(); break;
+            case 7: shuffleSongs(); break;
+            case 8: repeatSong(); break;
+            case 9: playAllSongs(); break;
+            case 10:
+                printf("Exiting program...\n");
+                exit(0);
+            default:
+                printf("Invalid choice! Try again.\n");
+        }
+    }
+    return 0;
+}
